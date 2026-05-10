@@ -29,6 +29,7 @@ struct editorConfig {
 	int cx, cy;
 	int screenrows;
 	int screencols;
+	struct termios orig_termios;
 };
 
 struct editorConfig E;
@@ -87,7 +88,7 @@ void editorMoveCursor(char key) {
 	}
 }
 
-void editorReadKey() {
+int editorReadKey() {
 	int nread;
 	char c;
 	while ((nread = read(STDIN_FILENO, &c, 1)) != 1);
@@ -95,14 +96,14 @@ void editorReadKey() {
 	if (c == '\x1b') {
 		char seq[3];
 		if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
-		if (read(STDIN_FILENO, &seq[1], 1) != 1) return '/x1b';
+		if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
 
 		if (seq[0] == '[') {
 			switch (seq[1]) {
-				case "A": return 'w';
-				case "B": return 's';
-				case "C": return 'd';
-				case "D": return 'a';
+				case 'A': return 'w';
+				case 'B': return 's';
+				case 'C': return 'd';
+				case 'D': return 'a';
 			}
 		}
 		return '\x1b';
@@ -120,21 +121,12 @@ int main() {
 	while (1) {
 		editorReFreshScreen();
 
-		char c;
-		if (read(STDIN_FILENO, &c, 1) == -1) break;
-
+		int c = editorReadKey();
 		if (c == 'q') break;
+
+		editorMoveCursor(c);
 	}
 
-	// char c;
-	//
-	// while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
-	// 	if (iscntrl(c)) {
-	// 		printf("%d\r\n", c);
-	// 	} else {
-	// 		printf("%d ('%c')\r\n", c, c);
-	// 	}
-	// }
-	//
-	return 0;
+		return 0;
+
 }
